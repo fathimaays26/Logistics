@@ -4,7 +4,7 @@ import type { DashboardPage } from "./Header";
 
 export default function DashboardLayout({
   children,
-  activePage = "Overview",
+  activePage = "Logistics Overview",
   onPageChange,
 }: {
   children: React.ReactNode;

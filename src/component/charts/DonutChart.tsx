@@ -29,7 +29,7 @@ const DONUT_COLORS = [
 export default function DonutChart({
   data,
   height = 260,
-  emptyMessage = "No sales mix data available",
+  emptyMessage = "No data available",
   valueFormatter = (v) => formatNumber(v),
 }: DonutChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);

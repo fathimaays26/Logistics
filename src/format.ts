@@ -13,10 +13,28 @@ export function formatNumber(value: number): string {
 }
 
 export function formatCurrency(value: number): string {
-  return "₹" + formatCompactNumber(value);
+
+  if (!isFinite(value)) return "₹0";
+
+  const abs = Math.abs(value);
+
+  if (abs >= 1_00_00_000) {
+    return "₹" + (value / 1_00_00_000).toFixed(2) + " Cr";
+  }
+
+  if (abs >= 1_00_000) {
+    return "₹" + (value / 1_00_000).toFixed(2) + " L";
+  }
+
+  if (abs >= 1_000) {
+    return "₹" + Math.round(value).toLocaleString("en-IN");
+  }
+
+  return "₹" + value.toFixed(0);
 }
 
 export function formatPercent(value: number, decimals = 1): string {
   if (!isFinite(value)) return "0%";
   return value.toFixed(decimals) + "%";
 }
+

@@ -7,7 +7,17 @@ interface KPICardProps {
   loading?: boolean;
   progress?: { value: number; max?: number; color?: string };
   badge?: string;
-  accentColor?: "blue" | "emerald" | "amber" | "rose" | "indigo" | "slate";
+  accentColor?:
+    | "blue"
+    | "emerald"
+    | "amber"
+    | "rose"
+    | "indigo"
+    | "slate"
+    | "orange"
+    | "red"
+    | "violet"
+    | "cyan";
 }
 
 const trendColor = {
@@ -25,6 +35,10 @@ const accentBorders = {
   rose: "hover:border-rose-400 border-t-2 border-t-rose-500",
   indigo: "hover:border-indigo-400 border-t-2 border-t-indigo-600",
   slate: "hover:border-slate-400 border-t-2 border-t-slate-700",
+  orange: "hover:border-orange-400 border-t-2 border-t-orange-500",
+  red: "hover:border-red-400 border-t-2 border-t-red-500",
+  violet: "hover:border-violet-400 border-t-2 border-t-violet-500",
+  cyan: "hover:border-cyan-400 border-t-2 border-t-cyan-500",
 };
 
 export default function KPICard({

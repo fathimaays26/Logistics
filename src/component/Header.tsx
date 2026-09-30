@@ -1,12 +1,12 @@
 const PAGES = [
-  "Overview",
-  "Booking & Sales Analysis",
-  "Delivery & Fulfillment",
-  "Model & Market Performance",
-  "Pending Bookings ",
+  "Logistics Overview",
+  "Dispatch & Delivery",
+  "Transportation & Movement",
+  "Vehicle Inventory",
+  "Parts & Inventory",
 ] as const;
 
-export type DashboardPage = (typeof PAGES)[number] | "Pending Bookings";
+export type DashboardPage = (typeof PAGES)[number];
 
 export default function Header({
   activePage,
@@ -18,10 +18,10 @@ export default function Header({
   return (
     <header className="fixed top-0 left-0 right-0 z-30 h-16 bg-slate-900 text-white flex items-center px-6 shadow-md">
       <div className="flex items-center gap-3 shrink-0 mr-8">
-        <span className="text-lg font-semibold tracking-tight">NV</span>
+        <span className="text-lg font-semibold tracking-tight">LOG</span>
         <span className="hidden sm:inline-block h-4 w-px bg-white/25" />
         <span className="hidden sm:inline text-xs font-medium text-white/70">
-          New Vehicle Sales
+          Logistics
         </span>
       </div>
 
