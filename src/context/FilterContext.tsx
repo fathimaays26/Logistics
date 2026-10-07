@@ -31,9 +31,7 @@ interface FilterContextValue {
   matchingCustomerIds: string[] | null;
 }
 
-const FilterContext = createContext<FilterContextValue | undefined>(
-  undefined,
-);
+const FilterContext = createContext<FilterContextValue | undefined>(undefined);
 
 function uniqueSorted(values: Array<string | null | undefined>): string[] {
   return Array.from(
@@ -46,14 +44,9 @@ function uniqueSorted(values: Array<string | null | undefined>): string[] {
   ).sort();
 }
 
-export function FilterProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [filters, setFilters] = useState<GlobalFilters>(EMPTY_FILTERS);
-  const [lookups, setLookups] =
-    useState<DimensionLookups | null>(null);
+  const [lookups, setLookups] = useState<DimensionLookups | null>(null);
   const [loadingLookups, setLoadingLookups] = useState(true);
 
   useEffect(() => {
@@ -95,9 +88,10 @@ export function FilterProvider({
             customers.map((customer) => customer.customer_type),
           ),
           bookingStatuses: [],
-          inventoryStatuses: uniqueSorted(
-            snapshot.vehicleInventory.map((row) => row.inventory_status),
-          ),
+          inventoryStatuses: uniqueSorted([
+            ...snapshot.vehicleInventory.map((row) => row.inventory_status),
+            ...snapshot.partInventory.map((row) => row.inventory_status),
+          ]),
           deliveryStatuses: uniqueSorted(
             snapshot.deliveries.map((row) => row.delivery_status),
           ),
@@ -126,11 +120,7 @@ export function FilterProvider({
         if (key === "regionId") {
           if (nextFilters.locationId) {
             const location = lookups.locationsById.get(nextFilters.locationId);
-            if (
-              value &&
-              location &&
-              location.region_id !== value
-            ) {
+            if (value && location && location.region_id !== value) {
               nextFilters.locationId = null;
             }
           }
@@ -140,7 +130,9 @@ export function FilterProvider({
               (item) => item.route_id === nextFilters.routeId,
             );
             if (route) {
-              const origin = lookups.locationsById.get(route.origin_location_id);
+              const origin = lookups.locationsById.get(
+                route.origin_location_id,
+              );
               const destination = lookups.locationsById.get(
                 route.destination_location_id,
               );
@@ -242,9 +234,7 @@ export function FilterProvider({
       .filter((customer) =>
         customerType ? customer.customer_type === customerType : true,
       )
-      .filter((customer) =>
-        regionId ? customer.region_id === regionId : true,
-      )
+      .filter((customer) => (regionId ? customer.region_id === regionId : true))
       .map((customer) => customer.customer_id);
   }, [lookups, filters.customerType, filters.regionId]);
 

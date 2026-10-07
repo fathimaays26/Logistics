@@ -64,6 +64,18 @@ function monthLabel(value: string | null | undefined): string {
   return new Intl.DateTimeFormat("en-US", { month: "short" }).format(date);
 }
 
+function monthDateRange(month: string, year: number): [string, string] | null {
+  const monthIndex = MONTH_ORDER.indexOf(month);
+  if (monthIndex < 0) return null;
+
+  const monthNumber = String(monthIndex + 1).padStart(2, "0");
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  return [
+    `${year}-${monthNumber}-01`,
+    `${year}-${monthNumber}-${String(lastDay).padStart(2, "0")}`,
+  ];
+}
+
 function hoursBetween(
   start: string | null | undefined,
   end: string | null | undefined,
@@ -93,7 +105,7 @@ export default function DispatchVehicleMovement({
   activePage: DashboardPage;
   onPageChange: (page: DashboardPage) => void;
 }) {
-  const { filters } = useFilters();
+  const { filters, setFilter } = useFilters();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDispatchDetails, setShowDispatchDetails] = useState(false);
@@ -646,6 +658,34 @@ export default function DispatchVehicleMovement({
                 series={metrics.monthlyDispatch.series}
                 valueFormatter={(value) => formatNumber(value)}
                 height={235}
+                onPointClick={(month) => {
+                  const matchingYears = filteredDispatches
+                    .filter(
+                      (dispatch) =>
+                        monthLabel(dispatch.dispatch_date_time) === month,
+                    )
+                    .map((dispatch) =>
+                      Number(dateOnly(dispatch.dispatch_date_time).slice(0, 4)),
+                    )
+                    .filter(Number.isFinite);
+                  const availableYears = dispatches
+                    .map((dispatch) =>
+                      Number(dateOnly(dispatch.dispatch_date_time).slice(0, 4)),
+                    )
+                    .filter(Number.isFinite);
+                  const year = matchingYears.length
+                    ? Math.max(...matchingYears)
+                    : filters.startDate
+                      ? Number(filters.startDate.slice(0, 4))
+                      : filters.endDate
+                        ? Number(filters.endDate.slice(0, 4))
+                        : Math.max(...availableYears, 2025);
+                  const range = monthDateRange(month, year);
+                  if (range) {
+                    setFilter("startDate", range[0]);
+                    setFilter("endDate", range[1]);
+                  }
+                }}
               />
             </ChartCard>
           </div>

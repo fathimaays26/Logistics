@@ -117,15 +117,21 @@ export default function CrossDimensionMatrixChart({
   facts,
   allRegions,
   height = 300,
+  onCellClick,
 }: {
   facts: CrossDimensionFact[];
   /** Full region dimension, so every region stays comparable as a column. */
   allRegions: string[];
   height?: number;
+  onCellClick?: (
+    rowDimension: CrossDimension,
+    rowValue: string,
+    columnDimension: CrossDimension,
+    columnValue: string,
+  ) => void;
 }) {
-  const [rowDimension, setRowDimension] = useState<CrossDimension>(
-    "vehicleType",
-  );
+  const [rowDimension, setRowDimension] =
+    useState<CrossDimension>("vehicleType");
   const [colDimension, setColDimension] = useState<CrossDimension>("region");
   const [metric, setMetric] = useState<CrossMetric>("delivered");
   const [search, setSearch] = useState("");
@@ -133,7 +139,7 @@ export default function CrossDimensionMatrixChart({
   // The two axes can never be the same dimension.
   const columnDimension: CrossDimension =
     colDimension === rowDimension
-      ? CROSS_DIMENSIONS.find((item) => item !== rowDimension) ?? "region"
+      ? (CROSS_DIMENSIONS.find((item) => item !== rowDimension) ?? "region")
       : colDimension;
 
   const columnLabels = useMemo(() => {
@@ -143,103 +149,95 @@ export default function CrossDimensionMatrixChart({
     return [...present].sort((a, b) => a.localeCompare(b));
   }, [facts, columnDimension, allRegions]);
 
-  const {
-    rowLabels,
-    cells,
-    rowTotals,
-    colTotals,
-    grandTotal,
-    maxValue,
-  } = useMemo(() => {
-    const rows = new Map<string, Map<string, CellAggregate>>();
-    const rowDeliveryCount = new Map<string, number>();
-    const rowTotalsMap = new Map<string, CellAggregate>();
-    const colTotalsMap = new Map<string, CellAggregate>();
+  const { rowLabels, cells, rowTotals, colTotals, grandTotal, maxValue } =
+    useMemo(() => {
+      const rows = new Map<string, Map<string, CellAggregate>>();
+      const rowDeliveryCount = new Map<string, number>();
+      const rowTotalsMap = new Map<string, CellAggregate>();
+      const colTotalsMap = new Map<string, CellAggregate>();
 
-    for (const fact of facts) {
-      const rowKey = fact[rowDimension];
-      const colKey = fact[columnDimension];
+      for (const fact of facts) {
+        const rowKey = fact[rowDimension];
+        const colKey = fact[columnDimension];
 
-      rowDeliveryCount.set(
-        rowKey,
-        (rowDeliveryCount.get(rowKey) ?? 0) + (fact.delivered ? 1 : 0),
-      );
+        rowDeliveryCount.set(
+          rowKey,
+          (rowDeliveryCount.get(rowKey) ?? 0) + (fact.delivered ? 1 : 0),
+        );
 
-      let rowCells = rows.get(rowKey);
-      if (!rowCells) {
-        rowCells = new Map<string, CellAggregate>();
-        rows.set(rowKey, rowCells);
+        let rowCells = rows.get(rowKey);
+        if (!rowCells) {
+          rowCells = new Map<string, CellAggregate>();
+          rows.set(rowKey, rowCells);
+        }
+
+        let cell = rowCells.get(colKey);
+        if (!cell) {
+          cell = emptyCell();
+          rowCells.set(colKey, cell);
+        }
+
+        if (fact.delivered) {
+          cell.delivered += 1;
+          if (fact.onTime) cell.onTime += 1;
+        }
+        if (fact.tatDays !== null) {
+          cell.tatSum += fact.tatDays;
+          cell.tatCount += 1;
+        }
       }
 
-      let cell = rowCells.get(colKey);
-      if (!cell) {
-        cell = emptyCell();
-        rowCells.set(colKey, cell);
+      const query = search.trim().toLowerCase();
+      const labels = [...rows.keys()]
+        .filter((label) => (query ? label.toLowerCase().includes(query) : true))
+        .sort((a, b) => {
+          const byVolume =
+            (rowDeliveryCount.get(b) ?? 0) - (rowDeliveryCount.get(a) ?? 0);
+          return byVolume !== 0 ? byVolume : a.localeCompare(b);
+        });
+
+      const visible = labels;
+      const grand = emptyCell();
+      let peak = 0;
+
+      const track = (value: number | null) => {
+        if (value !== null && value > peak) peak = value;
+      };
+
+      for (const label of visible) {
+        const rowCells = rows.get(label)!;
+        const rowTotal = emptyCell();
+
+        for (const col of columnLabels) {
+          const cell = rowCells.get(col);
+          if (!cell) continue;
+          mergeCell(rowTotal, cell);
+          track(cellValue(cell, metric));
+
+          const colTotal = colTotalsMap.get(col) ?? emptyCell();
+          mergeCell(colTotal, cell);
+          colTotalsMap.set(col, colTotal);
+        }
+
+        rowTotalsMap.set(label, rowTotal);
+        mergeCell(grand, rowTotal);
       }
-
-      if (fact.delivered) {
-        cell.delivered += 1;
-        if (fact.onTime) cell.onTime += 1;
-      }
-      if (fact.tatDays !== null) {
-        cell.tatSum += fact.tatDays;
-        cell.tatCount += 1;
-      }
-    }
-
-    const query = search.trim().toLowerCase();
-    const labels = [...rows.keys()]
-      .filter((label) =>
-        query ? label.toLowerCase().includes(query) : true,
-      )
-      .sort((a, b) => {
-        const byVolume =
-          (rowDeliveryCount.get(b) ?? 0) - (rowDeliveryCount.get(a) ?? 0);
-        return byVolume !== 0 ? byVolume : a.localeCompare(b);
-      });
-
-    const visible = labels;
-    const grand = emptyCell();
-    let peak = 0;
-
-    const track = (value: number | null) => {
-      if (value !== null && value > peak) peak = value;
-    };
-
-    for (const label of visible) {
-      const rowCells = rows.get(label)!;
-      const rowTotal = emptyCell();
 
       for (const col of columnLabels) {
-        const cell = rowCells.get(col);
-        if (!cell) continue;
-        mergeCell(rowTotal, cell);
-        track(cellValue(cell, metric));
-
-        const colTotal = colTotalsMap.get(col) ?? emptyCell();
-        mergeCell(colTotal, cell);
-        colTotalsMap.set(col, colTotal);
+        const colTotal = colTotalsMap.get(col);
+        if (colTotal) track(cellValue(colTotal, metric));
       }
+      track(cellValue(grand, metric));
 
-      rowTotalsMap.set(label, rowTotal);
-      mergeCell(grand, rowTotal);
-    }
-
-    for (const col of columnLabels) {
-      const colTotal = colTotalsMap.get(col);
-      if (colTotal) track(cellValue(colTotal, metric));
-    }
-    track(cellValue(grand, metric));
-
-    return {
-      rowLabels: visible,
-      cells: rows,
-      rowTotals: rowTotalsMap,
-      colTotals: colTotalsMap,
-      grandTotal: grand,
-      maxValue: peak,
-    };
-  }, [facts, rowDimension, columnDimension, columnLabels, metric, search]);
+      return {
+        rowLabels: visible,
+        cells: rows,
+        rowTotals: rowTotalsMap,
+        colTotals: colTotalsMap,
+        grandTotal: grand,
+        maxValue: peak,
+      };
+    }, [facts, rowDimension, columnDimension, columnLabels, metric, search]);
 
   const cellStyle = (value: number | null) => {
     if (value === null) {
@@ -375,7 +373,9 @@ export default function CrossDimensionMatrixChart({
                       title={row}
                       className="sticky left-0 z-10 border-b border-r border-slate-100 bg-white px-3 py-2 text-[11px] font-semibold text-slate-900 whitespace-nowrap"
                     >
-                      <span className="block max-w-[190px] truncate">{row}</span>
+                      <span className="block max-w-[190px] truncate">
+                        {row}
+                      </span>
                     </td>
                     {columnLabels.map((col) => {
                       const cell = rowCells?.get(col) ?? null;
@@ -389,6 +389,16 @@ export default function CrossDimensionMatrixChart({
                           )}`}
                           className="border-b border-slate-100 px-3 py-2 text-center text-[11px] font-bold tabular-nums transition-all duration-150 hover:brightness-95"
                           style={cellStyle(value)}
+                          onClick={() => {
+                            if (cell) {
+                              onCellClick?.(
+                                rowDimension,
+                                row,
+                                columnDimension,
+                                col,
+                              );
+                            }
+                          }}
                         >
                           {formatValue(value, metric)}
                         </td>
@@ -396,7 +406,9 @@ export default function CrossDimensionMatrixChart({
                     })}
                     <td className="border-b border-l border-slate-100 bg-slate-50/70 px-3 py-2 text-center text-[11px] font-black tabular-nums text-slate-900">
                       {formatValue(
-                        rowTotals.has(row) ? cellValue(rowTotals.get(row)!, metric) : null,
+                        rowTotals.has(row)
+                          ? cellValue(rowTotals.get(row)!, metric)
+                          : null,
                         metric,
                       )}
                     </td>

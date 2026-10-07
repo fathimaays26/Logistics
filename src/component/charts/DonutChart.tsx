@@ -12,6 +12,7 @@ interface DonutChartProps {
   height?: number;
   emptyMessage?: string;
   valueFormatter?: (val: number) => string;
+  onItemClick?: (label: string) => void;
 }
 
 const DONUT_COLORS = [
@@ -31,6 +32,7 @@ export default function DonutChart({
   height = 260,
   emptyMessage = "No data available",
   valueFormatter = (v) => formatNumber(v),
+  onItemClick,
 }: DonutChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -105,6 +107,7 @@ export default function DonutChart({
                 className="cursor-pointer transition-all duration-200"
                 onMouseEnter={() => setHoveredIndex(idx)}
                 onMouseLeave={() => setHoveredIndex(null)}
+                onClick={() => onItemClick?.(seg.label)}
               />
             );
           })}
@@ -144,6 +147,7 @@ export default function DonutChart({
               }`}
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
+              onClick={() => onItemClick?.(seg.label)}
             >
               <div className="flex items-center justify-between text-xs mb-1">
                 <div className="flex items-center gap-2 min-w-0 pr-2">

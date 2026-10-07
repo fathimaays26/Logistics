@@ -8,6 +8,7 @@ import { formatNumber, formatPercent, formatCurrency } from "../format";
 import { loadDatabaseSnapshot } from "../dataService";
 import ClusteredColumnChart from "../component/charts/ClusteredColumnChart";
 import CrossDimensionMatrixChart, {
+  type CrossDimension,
   type CrossDimensionFact,
 } from "../component/charts/CrossDimensionMatrixChart";
 import type {
@@ -193,7 +194,7 @@ export default function Overview({
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
 
-  const { filters } = useFilters();
+  const { filters, setFilter, lookups } = useFilters();
 
   useEffect(() => {
     async function loadData() {
@@ -431,10 +432,7 @@ export default function Overview({
   // One outcome per unique vehicle: the latest completed delivery when the
   // vehicle has one, otherwise its latest open record.
   const vehicleOutcomes = useMemo<VehicleDeliveryOutcome[]>(() => {
-    const byVehicle = new Map<
-      string,
-      FactLogisticsVehicleDelivery[]
-    >();
+    const byVehicle = new Map<string, FactLogisticsVehicleDelivery[]>();
 
     for (const delivery of filtered.deliveries) {
       const records = byVehicle.get(delivery.vehicle_id);
@@ -456,8 +454,8 @@ export default function Overview({
     const outcomes: VehicleDeliveryOutcome[] = [];
 
     for (const [vehicleId, records] of byVehicle) {
-      const completed = records.filter(
-        (record) => Boolean(record.actual_delivery_date),
+      const completed = records.filter((record) =>
+        Boolean(record.actual_delivery_date),
       );
       const source = completed.length > 0 ? completed : records;
       const delivery = [...source].sort(latestFirst)[0];
@@ -469,11 +467,7 @@ export default function Overview({
       if (dispatch?.dispatch_date_time && delivery.actual_delivery_date) {
         const start = new Date(dispatch.dispatch_date_time).getTime();
         const end = new Date(delivery.actual_delivery_date).getTime();
-        if (
-          Number.isFinite(start) &&
-          Number.isFinite(end) &&
-          end >= start
-        ) {
+        if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
           tatHours = (end - start) / 36e5;
         }
       }
@@ -484,7 +478,8 @@ export default function Overview({
         category: classified.category,
         delayDays: classified.delayDays,
         delayText: classified.delayText,
-        isDelivered: classified.category === "On-time" ||
+        isDelivered:
+          classified.category === "On-time" ||
           classified.category === "Delivered Late",
         tatHours,
       });
@@ -679,14 +674,32 @@ export default function Overview({
     [regions],
   );
 
+  const applyDeliveryDimensionFilter = (
+    dimension: CrossDimension,
+    value: string,
+  ) => {
+    if (dimension === "region") {
+      const region = lookups?.regions.find(
+        (item) => item.region_name === value,
+      );
+      if (region) setFilter("regionId", region.region_id);
+    } else if (dimension === "model") {
+      const matchingModels = lookups?.models.filter(
+        (item) => item.model_name === value,
+      );
+      if (matchingModels?.length === 1) {
+        setFilter("modelId", matchingModels[0].model_id);
+      }
+    } else if (dimension === "variant") {
+      setFilter("variant", value);
+    } else {
+      setFilter("vehicleType", value);
+    }
+  };
+
   // Delay detail rows for the inline "Delivery Delay Details" view
   const delayDetailRows = useMemo(() => {
-    const {
-      vehicleMap,
-      modelMap,
-      locationMap,
-      dispatchMap,
-    } = filtered;
+    const { vehicleMap, modelMap, locationMap, dispatchMap } = filtered;
     const transporterMap = new Map(
       transporters.map((item) => [item.transporter_id, item]),
     );
@@ -792,7 +805,15 @@ export default function Overview({
       }
       return (b.plannedDelivery || "").localeCompare(a.plannedDelivery || "");
     });
-  }, [filtered, vehicleOutcomes, transporters, routes, regions, detailStatus, searchQuery]);
+  }, [
+    filtered,
+    vehicleOutcomes,
+    transporters,
+    routes,
+    regions,
+    detailStatus,
+    searchQuery,
+  ]);
 
   const totalDetailRecords = delayDetailRows.length;
   const totalPages = Math.max(1, Math.ceil(totalDetailRecords / pageSize));
@@ -1240,6 +1261,15 @@ export default function Overview({
                 facts={deliveryFacts}
                 allRegions={regionNames}
                 height={360}
+                onCellClick={(
+                  rowDimension,
+                  rowValue,
+                  columnDimension,
+                  columnValue,
+                ) => {
+                  applyDeliveryDimensionFilter(rowDimension, rowValue);
+                  applyDeliveryDimensionFilter(columnDimension, columnValue);
+                }}
               />
             </ChartCard>
           </div>

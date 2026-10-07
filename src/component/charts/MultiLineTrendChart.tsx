@@ -15,6 +15,7 @@ interface MultiLineTrendChartProps {
   emptyMessage?: string;
   yMin?: number;
   yMax?: number;
+  onPointClick?: (label: string) => void;
 }
 
 const PALETTE = [
@@ -36,6 +37,7 @@ export default function MultiLineTrendChart({
   emptyMessage = "No trend data available",
   yMin,
   yMax,
+  onPointClick,
 }: MultiLineTrendChartProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
@@ -249,6 +251,7 @@ export default function MultiLineTrendChart({
                   strokeWidth={hoveredIdx === ptIdx ? 3 : 2}
                   className="transition-all duration-150 cursor-pointer"
                   onMouseEnter={() => setHoveredIdx(ptIdx)}
+                  onClick={() => onPointClick?.(labels[ptIdx])}
                 />
               ))}
             </g>

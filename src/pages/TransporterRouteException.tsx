@@ -161,9 +161,7 @@ function PartInventoryChart({
                 key={node.label}
                 type="button"
                 disabled={node.children.size === 0}
-                onClick={() =>
-                  node.children.size > 0 && onDrill(node.label)
-                }
+                onClick={() => node.children.size > 0 && onDrill(node.label)}
                 className={`group block w-full text-left ${
                   node.children.size > 0 ? "cursor-pointer" : "cursor-default"
                 }`}
@@ -229,7 +227,7 @@ export default function PartsInventory({
   activePage: DashboardPage;
   onPageChange: (page: DashboardPage) => void;
 }) {
-  const { filters } = useFilters();
+  const { filters, setFilter } = useFilters();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -249,13 +247,10 @@ export default function PartsInventory({
     setDrillState({ key: filterKey, part: [], location: [] });
   }
 
-  const partDrillPath =
-    drillState.key === filterKey ? drillState.part : [];
+  const partDrillPath = drillState.key === filterKey ? drillState.part : [];
   const locationDrillPath =
     drillState.key === filterKey ? drillState.location : [];
-  const setPartDrillPath = (
-    updater: (current: string[]) => string[],
-  ): void =>
+  const setPartDrillPath = (updater: (current: string[]) => string[]): void =>
     setDrillState((current) => ({ ...current, part: updater(current.part) }));
   const setLocationDrillPath = (
     updater: (current: string[]) => string[],
@@ -265,7 +260,9 @@ export default function PartsInventory({
       location: updater(current.location),
     }));
   const [attentionPartTypeFilter, setAttentionPartTypeFilter] = useState("");
-  const [viewMode, setViewMode] = useState<"overview" | "attention">("overview");
+  const [viewMode, setViewMode] = useState<"overview" | "attention">(
+    "overview",
+  );
 
   useEffect(() => {
     async function loadData() {
@@ -288,7 +285,8 @@ export default function PartsInventory({
   }, []);
 
   const locationMap = useMemo(
-    () => new Map(locations.map((location) => [location.location_id, location])),
+    () =>
+      new Map(locations.map((location) => [location.location_id, location])),
     [locations],
   );
 
@@ -321,7 +319,8 @@ export default function PartsInventory({
   }, [partInventory, locationMap, filters]);
 
   const totalQuantity = useMemo(
-    () => filteredParts.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0),
+    () =>
+      filteredParts.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0),
     [filteredParts],
   );
 
@@ -493,13 +492,18 @@ export default function PartsInventory({
   );
 
   const attentionPartTypeOptions = useMemo(
-    () => [...new Set(attentionRows.map((row) => row.partType))].sort((a, b) => a.localeCompare(b)),
+    () =>
+      [...new Set(attentionRows.map((row) => row.partType))].sort((a, b) =>
+        a.localeCompare(b),
+      ),
     [attentionRows],
   );
 
   const visibleAttentionRows = useMemo(() => {
     if (!attentionPartTypeFilter) return attentionRows;
-    return attentionRows.filter((row) => row.partType === attentionPartTypeFilter);
+    return attentionRows.filter(
+      (row) => row.partType === attentionPartTypeFilter,
+    );
   }, [attentionRows, attentionPartTypeFilter]);
 
   const stockStatusDonut = useMemo(
@@ -557,7 +561,8 @@ export default function PartsInventory({
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">
-                  Part-location positions currently holding low-stock or out-of-stock quantity.
+                  Part-location positions currently holding low-stock or
+                  out-of-stock quantity.
                 </p>
               </div>
             </div>
@@ -577,7 +582,9 @@ export default function PartsInventory({
                       <div className="mb-1">Part Type</div>
                       <select
                         value={attentionPartTypeFilter}
-                        onChange={(event) => setAttentionPartTypeFilter(event.target.value)}
+                        onChange={(event) =>
+                          setAttentionPartTypeFilter(event.target.value)
+                        }
                         className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-normal normal-case tracking-normal text-slate-600 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                         aria-label="Filter by part type"
                       >
@@ -590,26 +597,47 @@ export default function PartsInventory({
                       </select>
                     </th>
                     <th className="w-[28%] px-3 py-2.5 align-top">Location</th>
-                    <th className="px-3 py-2.5 text-right align-top">Available</th>
-                    <th className="px-3 py-2.5 text-right align-top">Low Stock</th>
-                    <th className="px-3 py-2.5 text-right align-top">Out of Stock</th>
+                    <th className="px-3 py-2.5 text-right align-top">
+                      Available
+                    </th>
+                    <th className="px-3 py-2.5 text-right align-top">
+                      Low Stock
+                    </th>
+                    <th className="px-3 py-2.5 text-right align-top">
+                      Out of Stock
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {visibleAttentionRows.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-14 text-center text-xs text-slate-400">
-                        No low-stock or out-of-stock part records match the selected part type.
+                      <td
+                        colSpan={6}
+                        className="py-14 text-center text-xs text-slate-400"
+                      >
+                        No low-stock or out-of-stock part records match the
+                        selected part type.
                       </td>
                     </tr>
                   ) : (
                     visibleAttentionRows.map((row) => (
-                      <tr key={`${row.part}||${row.location}`} className="hover:bg-slate-50">
-                        <td className="max-w-[280px] truncate px-3 py-2.5 font-medium text-slate-700" title={row.part}>
+                      <tr
+                        key={`${row.part}||${row.location}`}
+                        className="hover:bg-slate-50"
+                      >
+                        <td
+                          className="max-w-[280px] truncate px-3 py-2.5 font-medium text-slate-700"
+                          title={row.part}
+                        >
                           {row.part}
                         </td>
-                        <td className="px-3 py-2.5 text-slate-600">{row.partType}</td>
-                        <td className="max-w-[300px] truncate px-3 py-2.5 text-slate-600" title={row.location}>
+                        <td className="px-3 py-2.5 text-slate-600">
+                          {row.partType}
+                        </td>
+                        <td
+                          className="max-w-[300px] truncate px-3 py-2.5 text-slate-600"
+                          title={row.location}
+                        >
                           {row.location}
                         </td>
                         <td className="px-3 py-2.5 text-right tabular-nums text-emerald-700">
@@ -634,51 +662,131 @@ export default function PartsInventory({
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="text-xl font-bold tracking-tight text-slate-900">Parts &amp; Inventory</h1>
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">Page 5</span>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                  Parts &amp; Inventory
+                </h1>
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">
+                  Page 5
+                </span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Monitor spare-part stock availability, inventory levels, and distribution across logistics locations.
+                Monitor spare-part stock availability, inventory levels, and
+                distribution across logistics locations.
               </p>
             </div>
           </div>
 
           {error && (
-            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
           )}
 
           <div className="mb-6 grid grid-cols-2 gap-3.5 md:grid-cols-3 xl:grid-cols-6">
-            <KPICard title="Total Part Quantity" value={formatNumber(totalQuantity)} subtext={`Units • ${formatNumber(uniqueParts)} distinct parts`} tooltip="Total quantity across all matching part inventory records" accentColor="blue" loading={loading} />
-            <KPICard title="Available Quantity" value={formatNumber(quantityByStatus.available)} subtext="Available stock" tooltip="Part units currently marked Available" accentColor="emerald" loading={loading} />
-            <KPICard title="Low Stock Quantity" value={formatNumber(quantityByStatus.lowStock)} subtext="Needs replenishment" tooltip="Part units currently marked Low Stock" accentColor="amber" loading={loading} />
-            <KPICard title="Out of Stock" value={formatNumber(quantityByStatus.outOfStock)} subtext="No available quantity" tooltip="Part units currently marked Out of Stock" accentColor="rose" loading={loading} />
-            <KPICard title="Locations with Parts" value={formatNumber(stockedLocations)} subtext="Carrying filtered stock" tooltip="Distinct logistics locations holding part quantity above zero under the current filters" accentColor="indigo" loading={loading} />
-            <KPICard title="Stock Positions Below Level" value={formatNumber(partsBelowStockLevel)} subtext="Low or out of stock" tooltip="Part-location inventory positions currently holding low-stock or out-of-stock quantity" accentColor="rose" loading={loading} />
+            <KPICard
+              title="Total Part Quantity"
+              value={formatNumber(totalQuantity)}
+              subtext={`Units • ${formatNumber(uniqueParts)} distinct parts`}
+              tooltip="Total quantity across all matching part inventory records"
+              accentColor="blue"
+              loading={loading}
+            />
+            <KPICard
+              title="Available Quantity"
+              value={formatNumber(quantityByStatus.available)}
+              subtext="Available stock"
+              tooltip="Part units currently marked Available"
+              accentColor="emerald"
+              loading={loading}
+            />
+            <KPICard
+              title="Low Stock Quantity"
+              value={formatNumber(quantityByStatus.lowStock)}
+              subtext="Needs replenishment"
+              tooltip="Part units currently marked Low Stock"
+              accentColor="amber"
+              loading={loading}
+            />
+            <KPICard
+              title="Out of Stock"
+              value={formatNumber(quantityByStatus.outOfStock)}
+              subtext="No available quantity"
+              tooltip="Part units currently marked Out of Stock"
+              accentColor="rose"
+              loading={loading}
+            />
+            <KPICard
+              title="Locations with Parts"
+              value={formatNumber(stockedLocations)}
+              subtext="Carrying filtered stock"
+              tooltip="Distinct logistics locations holding part quantity above zero under the current filters"
+              accentColor="indigo"
+              loading={loading}
+            />
+            <KPICard
+              title="Stock Positions Below Level"
+              value={formatNumber(partsBelowStockLevel)}
+              subtext="Low or out of stock"
+              tooltip="Part-location inventory positions currently holding low-stock or out-of-stock quantity"
+              accentColor="rose"
+              loading={loading}
+            />
           </div>
 
           <div className="mb-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <ChartCard title="Part Inventory Overview" subtitle="Part Type → Part → Location • Quantity with stock-status breakdown" badge="Interactive Drill-down" height={390}>
+            <ChartCard
+              title="Part Inventory Overview"
+              subtitle="Part Type → Part → Location • Quantity with stock-status breakdown"
+              badge="Interactive Drill-down"
+              height={390}
+            >
               <PartInventoryChart
                 hierarchy={partHierarchy}
                 path={partDrillPath}
                 levels={["Part Type", "Part", "Location"]}
-                onDrill={(label) => label === "__BACK__" ? setPartDrillPath((current) => current.slice(0, -1)) : setPartDrillPath((current) => [...current, label])}
+                onDrill={(label) =>
+                  label === "__BACK__"
+                    ? setPartDrillPath((current) => current.slice(0, -1))
+                    : setPartDrillPath((current) => [...current, label])
+                }
               />
             </ChartCard>
-            <ChartCard title="Part Availability by Location" subtitle="Location → Part Type → Part • Quantity with stock-status breakdown" badge="Interactive Drill-down" height={390}>
+            <ChartCard
+              title="Part Availability by Location"
+              subtitle="Location → Part Type → Part • Quantity with stock-status breakdown"
+              badge="Interactive Drill-down"
+              height={390}
+            >
               <PartInventoryChart
                 hierarchy={locationHierarchy}
                 path={locationDrillPath}
                 levels={["Location", "Part Type", "Part"]}
-                onDrill={(label) => label === "__BACK__" ? setLocationDrillPath((current) => current.slice(0, -1)) : setLocationDrillPath((current) => [...current, label])}
+                onDrill={(label) =>
+                  label === "__BACK__"
+                    ? setLocationDrillPath((current) => current.slice(0, -1))
+                    : setLocationDrillPath((current) => [...current, label])
+                }
               />
             </ChartCard>
           </div>
 
           <div className="mb-5 grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12">
             <div className="lg:col-span-5">
-              <ChartCard title="Stock Status Distribution" subtitle="Share of part units by availability status" height={330}>
-                <DonutChart data={stockStatusDonut} height={260} emptyMessage="No matching part inventory records." />
+              <ChartCard
+                title="Stock Status Distribution"
+                subtitle="Share of part units by availability status"
+                height={330}
+              >
+                <DonutChart
+                  data={stockStatusDonut}
+                  height={260}
+                  emptyMessage="No matching part inventory records."
+                  onItemClick={(status) => {
+                    if (status !== "Other") {
+                      setFilter("inventoryStatus", status);
+                    }
+                  }}
+                />
               </ChartCard>
             </div>
             <div className="lg:col-span-7">
